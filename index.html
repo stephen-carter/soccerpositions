@@ -1,0 +1,269 @@
+<html>
+<head>
+    <style>
+        table {border-spacing: 0px}
+        th, td {padding: 4px; border: 1px solid black}
+    </style>
+</head>
+<body>
+    Enter each player name on its own line and optionally specify preferred positions.
+    <br/>
+    <i>Ex: Shane:Defense,Goalie</i>
+    <br/>
+    <textarea id="player_input" rows="18" cols="32">Aiden [6]
+Cesar [8]
+Charlie [12]
+David [17]
+Ezekiel [5]:Midfield,Offense
+Ford [2]:Defense
+James [15]
+John [11]
+Koshi [17]
+Kyle [4]:Defense,Offense,Midfield
+Malachi [13]
+Marcel [9]
+Mark [10]
+Matthew [7]
+Michael [1]
+Oliver [14]
+Shane [3]:Defense</textarea>
+    <textarea id="position_input" rows="18" cols="15">Goalie
+Defense-Left
+Defense-Center
+Defense-Right
+Midfield-Left
+Midfield-Center
+Midfield-Center
+Midfield-Right
+Offense-Left
+Offense-Center
+Offense-Right</textarea>
+    <br/>
+    <button id="submit">Assign Positions</button>
+    <br/><br/>
+    <div id="output"></div>
+    <script>
+        const bench = "Bench";
+        const goalie = "Goalie";
+            
+        var player_input = document.getElementById("player_input");
+        var position_input = document.getElementById("position_input");
+        var output = document.getElementById("output");
+        var submit = document.getElementById("submit");
+
+        class Player {
+            constructor(name, preferences) {
+                this.name = name;
+                this.preferences = preferences.length > 0 ? preferences.split(",") : [];
+                this.bench_count = 0;
+                this.assigned = [null, null, null, null];
+            }
+
+            hasPreference(position) {
+                return this.preferences.includes(position.name)
+            }
+
+            hasNearPreference(position) {
+                for (var i=0; i < this.preferences.length; i++) {
+                    let pref = this.preferences[i];
+                    if (position.name.includes(pref)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            toString() {
+                return this.name;
+            }
+        }
+
+        class Position {
+            constructor(name) {
+                this.name = name;
+                this.player = null;
+            }
+
+            setPlayer(player) {
+                this.player = player;
+            }
+
+            toString() {
+                return this.name;
+            }
+        }
+
+        function createPlayers() {
+            let players = [];
+            let lines = player_input.value.split("\n");
+            for (var i=0; i < lines.length; i++) {
+                player_info = lines[i].split(":");
+                name = player_info[0];
+                preferences = player_info.length > 1 ? player_info[1] : "";
+                players.push(new Player(name, preferences));
+            }
+            return players;
+        }
+
+        function createPositions() {
+            let positions = [];
+            let lines = position_input.value.split("\n");
+            for (var i=0; i < lines.length; i++) {
+                positions.push(new Position(lines[i]));
+            }
+
+            num_bench_positions = createPlayers().length - positions.length;
+            for (var i=num_bench_positions-1; i >= 0; i--) {
+                positions.unshift(new Position(bench))
+            }
+            return positions;
+        }
+
+        class Game {
+            constructor() {
+                this.players = createPlayers();
+                this.all_positions = [createPositions(),createPositions(),createPositions(),createPositions()];
+            }
+
+            assignPositions() {
+                this.sortPlayersRandomly();
+                this.assignPositionsForQuarter(0);
+                this.sortPlayersRandomly();
+                this.assignPositionsForQuarter(1);
+                this.sortPlayersRandomly();
+                this.assignPositionsForQuarter(2);
+                this.sortPlayersRandomly();
+                this.assignPositionsForQuarter(3);
+                this.sortPlayersByName();
+            }
+
+            assignPositionsForQuarter(quarter) {
+                for (var i=0; i < this.all_positions[quarter].length; i++) {
+                    let position = this.all_positions[quarter][i];
+                    if (position.name.startsWith(bench)) {
+                        this.sortPlayersByBenchCounts();
+                        this.sortPlayersByUnassigned(quarter);
+                        this.players[0].bench_count = this.players[0].bench_count + (quarter == 2 ? 1.5 : 1);
+                    } else {
+                        this.sortPlayersByPosition(position);
+                        this.sortPlayersByUnassigned(quarter);
+                    }
+                    this.all_positions[quarter][i].player = this.players[0];
+                    this.players[0].assigned[quarter] = position;
+
+                    if (position.name == goalie) {
+                        const pref_idx = this.players[0].preferences.indexOf(goalie);
+                        if (pref_idx > -1) { // If found, remove goalie preference (so you are only goalie once)
+                            this.players[0].preferences.splice(pref_idx, 1); 
+                        }
+                        this.players[0].preferences
+                    }
+                }
+            }
+
+            sortPlayersByPosition(position) {
+                let players_with_pref = []
+                let players_with_near_pref = []
+                let players_without_pref = []
+                for (var i=0; i < this.players.length; i++) {
+                    let player = this.players[i];
+                    if (player.hasPreference(position)) {
+                        if (Math.random() < 0.5) {
+                            players_with_pref.push(player);
+                        } else {
+                            players_with_pref.unshift(player);
+                        }
+                    } else if (player.hasNearPreference(position)) {
+                        if (Math.random() < 0.5) {
+                            players_with_near_pref.push(player);
+                        } else {
+                            players_with_near_pref.unshift(player);
+                        }
+                    } else {
+                        if (Math.random() < 0.5) {
+                            players_without_pref.push(player);
+                        } else {
+                            players_without_pref.unshift(player);
+                        }
+                    }
+                }
+                this.players = players_with_pref.concat(players_with_near_pref).concat(players_without_pref);
+            }
+
+            sortPlayersByBenchCounts() {
+                let players_new = []
+                for (var i=0; i < this.players.length; i++) {
+                    let player = this.players[i];
+                    for (var k=0; k <= players_new.length; k++) {
+                        if (k==players_new.length) {
+                            players_new.splice(k, 0, player);
+                            break;
+                        }
+                        if (player.bench_count <= players_new[k].bench_count) {
+                            players_new.splice(k, 0, player);
+                            break;
+                        }
+                    }
+                }
+                this.players = players_new;
+            }
+
+            sortPlayersByUnassigned(quarter) {
+                let players_assigned = []
+                let players_unassigned = []
+                for (var i=0; i < this.players.length; i++) {
+                    let player = this.players[i];
+                    if (player.assigned[quarter] != null) {
+                        players_assigned.push(player);
+                    } else {
+                        players_unassigned.push(player);
+                    }
+                }
+                this.players = players_unassigned.concat(players_assigned);
+            }
+
+            sortPlayersRandomly() {
+                this.players.sort((a,b) => Math.random() < 0.5 ? 1 : -1);
+            }
+
+            sortPlayersByName() {
+                this.players.sort((a,b) => a.name > b.name ? 1 : -1);
+            }
+
+            toString() {
+                let str = "<h3>Positions Table</h3><table><tr><th>Position</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th></tr>";
+                for (var i=0; i < this.all_positions[0].length; i++) {
+                    str += "<tr>";
+                    str += "<td><b>" + this.all_positions[0][i].name + "</b></td>";
+                    str += "<td>" + this.all_positions[0][i].player.name + "</td>";
+                    str += "<td>" + this.all_positions[1][i].player.name + "</td>";
+                    str += "<td>" + this.all_positions[2][i].player.name + "</td>";
+                    str += "<td>" + this.all_positions[3][i].player.name + "</td>";
+                    str += "</tr>";
+                }
+                str += "</table>";
+
+                str += "<h3>Players Table</h3><table><tr><th>Player</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th></tr>";
+                for (var i=0; i < this.players.length; i++) {
+                    str += "<tr>";
+                    str += "<td><b>" + this.players[i].name + "</b></td>";
+                    str += "<td>" + this.players[i].assigned[0].name + "</td>";
+                    str += "<td>" + this.players[i].assigned[1].name + "</td>";
+                    str += "<td>" + this.players[i].assigned[2].name + "</td>";
+                    str += "<td>" + this.players[i].assigned[3].name + "</td>";
+                    str += "</tr>";
+                }
+                str += "</table>";
+
+                return str;
+            }
+        }
+        
+        submit.onclick = function() {
+            let game = new Game();
+            game.assignPositions();
+            output.innerHTML = game;
+        };
+    </script>
+</body>
+</html>
