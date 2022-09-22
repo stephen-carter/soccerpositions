@@ -54,7 +54,7 @@ Offense-Right</textarea>
         class Player {
             constructor(name, preferences) {
                 this.name = name;
-                this.preferences = preferences.length > 0 ? preferences.split(",") : [];
+                this.preferences = preferences.length > 0 ? preferences.replace(/\s/,'').split(",") : [];
                 this.bench_count = 0;
                 this.assigned = [null, null, null, null];
             }
@@ -125,7 +125,67 @@ Offense-Right</textarea>
                 this.all_positions = [createPositions(),createPositions(),createPositions(),createPositions()];
             }
 
+            sortPositionsBasedOnPreferences() { 
+                this.sortPositionsBasedOnPreferencesForQuarter(0);
+                this.sortPositionsBasedOnPreferencesForQuarter(1);
+                this.sortPositionsBasedOnPreferencesForQuarter(2);
+                this.sortPositionsBasedOnPreferencesForQuarter(3);
+            }
+
+            sortPositionsBasedOnPreferencesForQuarter(quarter) {
+                let positionScores = new Map();
+                for (var i=0; i < this.all_positions[quarter].length; i++) {
+                    let position = this.all_positions[quarter][i];
+                    let positionScore = 0;
+                    for (var k=0; k < this.players.length; k++) {
+                        if (this.players[k].hasPreference(position)) {
+                            positionScore = positionScore + 3;
+                        } else if (this.players[k].hasNearPreference(position)) {
+                            positionScore = positionScore + 1;
+                        }
+                    }
+                    if (position.name == bench) {
+                        positionScore = 100;
+                    }
+                    positionScores.set(position.name, positionScore);
+                }
+                this.all_positions[quarter] = this.all_positions[quarter].sort((a,b) => (positionScores.get(a.name) > positionScores.get(b.name)) ? -1 : 1);
+            }
+
+            sortPositionsByProvidedOrder() {
+                this.sortPositionsByProvidedOrderForQuarter(0);
+                this.sortPositionsByProvidedOrderForQuarter(1);
+                this.sortPositionsByProvidedOrderForQuarter(2);
+                this.sortPositionsByProvidedOrderForQuarter(3);
+            }
+
+            sortPositionsByProvidedOrderForQuarter(quarter) {
+                let positions = createPositions();
+                let bench_positions = [];
+                let other_positions = [];
+                for (var i=0; i < positions.length; i++) {
+                    let curr_position = positions[i];
+                    if (curr_position.name == bench) {
+                        bench_positions.push(this.all_positions[quarter][i])
+                    } else {
+                        other_positions.push(this.getPositionWithName(this.all_positions[quarter], curr_position.name))
+                    }
+                }
+
+                this.all_positions[quarter] = other_positions.concat(bench_positions);
+            }
+
+            getPositionWithName(positions, positionName) {
+                for (var i=0; i < positions.length; i++) {
+                    if (positions[i].name == positionName) {
+                        return positions[i]
+                    }
+                }
+            }
+            
+
             assignPositions() {
+                this.sortPositionsBasedOnPreferences();
                 this.sortPlayersRandomly();
                 this.assignPositionsForQuarter(0);
                 this.sortPlayersRandomly();
@@ -135,6 +195,7 @@ Offense-Right</textarea>
                 this.sortPlayersRandomly();
                 this.assignPositionsForQuarter(3);
                 this.sortPlayersByName();
+                this.sortPositionsByProvidedOrder();
             }
 
             assignPositionsForQuarter(quarter) {
