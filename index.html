@@ -213,6 +213,7 @@ Offense-Right</textarea>
                     this.players[0].assigned[quarter] = position;
 
                     if (position.name == goalie) {
+                        this.players[0].bench_count = this.players[0].bench_count + .5;
                         const pref_idx = this.players[0].preferences.indexOf(goalie);
                         if (pref_idx > -1) { // If found, remove goalie preference (so you are only goalie once)
                             this.players[0].preferences.splice(pref_idx, 1); 
