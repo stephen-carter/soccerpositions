@@ -3,11 +3,13 @@
     <style>
         table {border-spacing: 0px}
         th, td {padding: 4px; border: 1px solid black}
-        textarea {font-size: 10pt}
+        textarea {font-size: 12pt; width: 100%}
         button {font-size: 14pt}
     </style>
 </head>
 <body>
+    <b>Players:</b> <i>(newline separated)</i>
+    <br/>
     Enter each player name on its own line and optionally specify preferred positions.
     <br/>
     <i>Ex: Oliver:Defense-Center,Defense,Center</i>
@@ -29,18 +31,11 @@ Matthew [7]
 Michael [1]
 Oliver [14]:Defense-Center,Defense,Center
 Shane [3]:Defense</textarea>
-    <textarea id="position_input" rows="20" cols="20">Goalie
-Defense-Left
-Defense-Center
-Defense-Right
-Midfield-Left
-Midfield-Center
-Midfield-Center
-Midfield-Right
-Offense-Left
-Offense-Center
-Offense-Right</textarea>
+    <br/><br/>
+    <b>Positions:</b> <i>(comma separated)</i>
     <br/>
+    <textarea id="position_input" rows="2" cols="20">Goalie,Defense-Left,Defense-Center,Defense-Right,Midfield-Left,Midfield-Center,Midfield-Center,Midfield-Right,Offense-Left,Offense-Center,Offense-Right</textarea>
+    <br/><br/>
     <button id="submit">Assign Positions</button>
     <br/><br/>
     <div id="output"></div>
@@ -109,7 +104,7 @@ Offense-Right</textarea>
 
         function createPositions() {
             let positions = [];
-            let lines = position_input.value.split("\n");
+            let lines = position_input.value.split(",");
             for (var i=0; i < lines.length; i++) {
                 positions.push(new Position(lines[i]));
             }
@@ -295,7 +290,7 @@ Offense-Right</textarea>
             }
 
             toString() {
-                let str = "<h3>Positions Table</h3><table><tr><th>Position</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th></tr>";
+                let str = "<h3>Assignments by Positions</h3><table><tr><th>Position</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th></tr>";
                 for (var i=0; i < this.all_positions[0].length; i++) {
                     str += "<tr>";
                     str += "<td><b>" + this.all_positions[0][i].name + "</b></td>";
@@ -307,7 +302,7 @@ Offense-Right</textarea>
                 }
                 str += "</table>";
 
-                str += "<h3>Players Table</h3><table><tr><th>Player</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th></tr>";
+                str += "<h3>Assignments by Players</h3><table><tr><th>Player</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th></tr>";
                 for (var i=0; i < this.players.length; i++) {
                     str += "<tr>";
                     str += "<td><b>" + this.players[i].name + "</b></td>";
